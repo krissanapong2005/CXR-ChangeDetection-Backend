@@ -197,5 +197,34 @@ class LungSegmentationService:
         mask_layer[pred_mask == 2] = [0, 255, 0] # ขวา: เขียว
         
         pred_overlay = cv2.addWeighted(image_color, 0.6, mask_layer, 0.4, 0)
-        
-        return pred_overlay
+        cropped_result = self.get_cropped_image(image_color, pred_mask)
+
+        return pred_overlay, cropped_result
+    def get_cropped_image(self, original_image, pred_mask, padding=15):
+            binary_mask = np.where(pred_mask > 0, 255, 0).astype(np.uint8)
+            coords = cv2.findNonZero(binary_mask)
+            
+            if coords is not None:
+                x, y, w, h = cv2.boundingRect(coords)
+                
+                # --- แก้ไขตรงนี้ ---
+                # ถ้าส่ง image_color เข้ามา (NumPy Array)
+                # shape จะได้เป็น (height, width, channels)
+                orig_h, orig_w = original_image.shape[:2] 
+                
+                mask_h, mask_w = pred_mask.shape
+                
+                scale_x = orig_w / mask_w
+                scale_y = orig_h / mask_h
+                
+                xmin = max(0, int((x - padding) * scale_x))
+                ymin = max(0, int((y - padding) * scale_y))
+                xmax = min(orig_w, int((x + w + padding) * scale_x))
+                ymax = min(orig_h, int((y + h + padding) * scale_y))
+
+                # การ Crop ใน NumPy ต้องใช้ [y1:y2, x1:x2]
+                cropped_img = original_image[ymin:ymax, xmin:xmax]
+                
+                return cropped_img
+            else:
+                return None
