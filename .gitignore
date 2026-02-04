@@ -4,3 +4,4 @@ venv/
 __pycache__/
 *.pyc
 .env
+app/models/one_class_model/weight_v1.pth
