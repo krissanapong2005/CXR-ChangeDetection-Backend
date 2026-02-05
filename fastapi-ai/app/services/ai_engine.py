@@ -2,7 +2,7 @@ from app.utils import decode_base64_to_bytes, numpy_to_base64
 from app.models.one_class_model import AnomalyDetector
 
 # โหลด Detector เตรียมไว้ (Singleton Pattern)
-detector = AnomalyDetector(threshold=0.005) # ใช้ค่าที่คุณคำนวณจาก Colab
+detector = AnomalyDetector(threshold=0.001949) # ใช้ค่าที่คุณคำนวณจาก Colab
 
 def process_medical_images(img1_base64: str, img2_base64: str, roi_data: dict):
     # 1. แปลง Base64 เป็น Bytes

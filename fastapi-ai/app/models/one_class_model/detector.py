@@ -32,12 +32,9 @@ class AnomalyDetector:
         img_tensor = torch.from_numpy(img).float() / 255.0
         return img_tensor.unsqueeze(0).unsqueeze(0).to(self.device)
 
-    def check_is_lung_from_base64(self, base64_string):
-        """รับ Base64 แล้วตรวจสอบว่าเป็นภาพปอดไหม"""
-        # 1. Decode Base64 เป็น Bytes
-        img_bytes = decode_base64_to_bytes(base64_string)
-        
-        # 2. ทำ Preprocess (Resize เป็น 256x256 และ Normalize 0-1)
+    def check_is_lung(self, img_bytes):
+        """รับ Base64 แล้วตรวจสอบว่าเป็นภาพปอดไหม"""       
+        # ทำ Preprocess (Resize เป็น 256x256 และ Normalize 0-1)
         input_tensor = self.preprocess(img_bytes)
         
         with torch.no_grad():
