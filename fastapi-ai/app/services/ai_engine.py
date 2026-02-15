@@ -1,8 +1,11 @@
 from app.utils import decode_base64_to_bytes, numpy_to_base64
 from app.models.one_class_model import AnomalyDetector
+from app.models.segment_model import lung_segment_service, normalize_contrast_service
 
+model_path = r''
 # โหลด Detector เตรียมไว้ (Singleton Pattern)
 detector = AnomalyDetector(threshold=0.001949) # ใช้ค่าที่คุณคำนวณจาก Colab
+segment_service = lung_segment_service(model_path)
 
 def process_medical_images(img1_base64: str, img2_base64: str, roi_data: dict):
     # 1. แปลง Base64 เป็น Bytes
@@ -22,6 +25,13 @@ def process_medical_images(img1_base64: str, img2_base64: str, roi_data: dict):
     # --- ขั้นตอนที่ทำ: Segment & Crop ---
     # สมมติว่าได้ผลลัพธ์เป็นภาพ Numpy Array จากขั้นตอนถัดๆ ไป
     # change_map_np = ...
+def pred_segment_crop(img64):
+    img = segment_service.prepare_base64_for_predict(img64)
+    pred_overlay, crop_img = segment_service.predict(img)
+    pred_overlay = segment_service.image_to_base64(pred_overlay)
+    crop_img = segment_service.image_to_base64(crop_img)
+    
+    return pred_overlay, crop_img
 
     # 3. ส่งผลลัพธ์กลับเป็น Base64 เพื่อให้ Laravel/Frontend แสดงผล <--- พาร์ทนี้ยังไม่นิ่ง
     # return {
