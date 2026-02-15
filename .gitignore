@@ -1,1 +1,7 @@
 ignore_dir
+env/
+venv/
+__pycache__/
+*.pyc
+.env
+*.pth

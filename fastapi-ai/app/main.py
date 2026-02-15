@@ -1,61 +1,51 @@
-import json
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, status
-from typing import List
+from fastapi import FastAPI, HTTPException, status
+from pydantic import BaseModel
+from typing import Dict, Any
+
+# นำเข้าฟังก์ชันจากโครงสร้างโฟลเดอร์ที่คุณวางไว้
 from app.services.ai_engine import process_medical_images
 
 app = FastAPI(
     title="Medical AI Image Service",
-    description="Service สำหรับวิเคราะห์ Change Map จากภาพ CXR 2 ระยะเวลา",
-    version="1.1.0"
+    description="Service สำหรับวิเคราะห์ Change Map จากภาพ CXR ผ่าน Base64",
+    version="1.2.0"
 )
+
+# 1. กำหนด Schema สำหรับรับข้อมูล (JSON Body)
+class AnalyzeRequest(BaseModel):
+    image1_base64: str  # ภาพอดีต
+    image2_base64: str  # ภาพปัจจุบัน
+    roi_data: Dict[str, Any] # ข้อมูล ROI เช่น {"roi1": [x,y,w,h], ...}
 
 @app.get("/health", tags=["System"])
 async def health_check():
     return {"status": "ready", "service": "ai-engine"}
 
 @app.post("/api/v1/analyze", tags=["AI Pipeline"])
-async def analyze_cxr(
-    image1: UploadFile = File(..., description="ภาพ CXR ใบที่ 1 (อดีต)"),
-    image2: UploadFile = File(..., description="ภาพ CXR ใบที่ 2 (ปัจจุบัน)"),
-    roi_data: str = Form(..., description="JSON string ของ ROI เช่น {'roi1': [x,y,w,h], 'roi2': [x,y,w,h]}")
-):
+async def analyze_cxr(request: AnalyzeRequest):
     """
-    Pipeline: 
-    1. Validation 
-    2. One-class Check 
-    3. Normalization 
-    4. Segmentation 
-    5. Registration 
-    6. Change Map Generation
+    Pipeline สำหรับ Base64:
+    1. รับ JSON Payload (Base64 + ROI)
+    2. ส่งต่อไปยัง ai_engine เพื่อ Decode และประมวลผล
+    3. รับผลลัพธ์กลับมาเป็น JSON (ซึ่งจะมีภาพผลลัพธ์เป็น Base64)
     """
-    
-    # 1. Validation: ตรวจสอบประเภทไฟล์
-    allowed_types = ["image/jpeg", "image/png", "image/dicom"] # เพิ่ม DICOM ถ้าจำเป็น
-    if image1.content_type not in allowed_types or image2.content_type not in allowed_types:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Unsupported file type. Please upload JPG or PNG."
+    try:
+        # 2. ตรวจสอบเบื้องต้นว่ามีการส่ง String มาจริงหรือไม่
+        if not request.image1_base64 or not request.image2_base64:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="กรุณาส่งข้อมูลภาพในรูปแบบ Base64 ทั้ง 2 ภาพ"
+            )
+
+        # 3. ส่งข้อมูลไปยัง Service Layer (ai_engine.py)
+        # เนื่องจากเป็น Base64 string อยู่แล้ว จึงไม่ต้องใช้ 'await .read()' เหมือนไฟล์
+        result = process_medical_images(
+            request.image1_base64, 
+            request.image2_base64, 
+            request.roi_data
         )
 
-    # 2. Parse ROI JSON
-    try:
-        parsed_roi = json.loads(roi_data)
-    except json.JSONDecodeError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Invalid ROI JSON format."
-        )
-
-    try:
-        # 3. Read Files
-        img1_bytes = await image1.read()
-        img2_bytes = await image2.read()
-
-        # 4. Execute Pipeline (ส่งงานต่อไปยัง Service Layer)
-        # เราจะไม่เขียน Logic การประมวลผลที่นี่ เพื่อให้โค้ดทดสอบง่าย
-        result = process_medical_images(img1_bytes, img2_bytes, parsed_roi)
-
-        # 5. Handle Business Logic Errors
+        # 4. ตรวจสอบ Business Logic Error (เช่น One-class ไม่ผ่าน)
         if "error" in result:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, 
@@ -64,18 +54,15 @@ async def analyze_cxr(
 
         return result
 
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        # Log error ที่นี่ (เช่นใช้ Loguru หรือ Logging)
+        # ในระดับ Production ควรใช้ Logging เก็บรายละเอียด Error จริง
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Internal Server Error: {str(e)}"
+            detail=f"เกิดข้อผิดพลาดภายในระบบ: {str(e)}"
         )
-    
-    finally:
-        # คืนทรัพยากร Memory
-        await image1.close()
-        await image2.close()
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

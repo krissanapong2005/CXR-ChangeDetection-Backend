@@ -1,0 +1,19 @@
+# --- Web Server ---
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6  # จำเป็นสำหรับการรับไฟล์ภาพและ Form Data
+
+# --- Data & Image Processing ---
+numpy==1.26.0
+Pillow==10.2.0           # สำหรับการเปิดและจัดการภาพเบื้องต้น
+opencv-python-headless   # สำหรับ ROI, BBox และ Change Map (ใช้ headless เพื่อลดขนาด docker)
+
+# --- Deep Learning ---
+torch
+torchvision
+
+# --- Medical Specific ---
+scipy                    # สำหรับการคำนวณสถิติและ Threshold ของ Autoencoder
+
+# --- Utilities ---
+python-dotenv            # สำหรับโหลดค่า config จากไฟล์ .env
