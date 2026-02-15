@@ -26,7 +26,9 @@ def process_medical_images(img1_base64: str, img2_base64: str, roi_data: dict):
     # สมมติว่าได้ผลลัพธ์เป็นภาพ Numpy Array จากขั้นตอนถัดๆ ไป
     # change_map_np = ...
 def pred_segment_crop(img64):
+    #convert base64 to np
     img = segment_service.prepare_base64_for_predict(img64)
+    #convert np to base64
     pred_overlay, crop_img = segment_service.predict(img)
     pred_overlay = segment_service.image_to_base64(pred_overlay)
     crop_img = segment_service.image_to_base64(crop_img)
