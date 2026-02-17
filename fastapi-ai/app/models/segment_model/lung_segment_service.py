@@ -1,3 +1,4 @@
+#lung_segment_service.py
 import torch
 import torchvision
 import segmentation_models_pytorch as smp
@@ -9,7 +10,7 @@ import torchvision.transforms.functional as TF
 import numpy as np
 from PIL import Image
 import os
-from modelStructure import PretrainedUNet
+from .modelStructure import PretrainedUNet
 import base64
 class LungSegmentationService:
     def __init__(self, model_path, device=None):

@@ -1,68 +1,40 @@
-from fastapi import FastAPI, HTTPException, status
-from pydantic import BaseModel
-from typing import Dict, Any
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-# นำเข้าฟังก์ชันจากโครงสร้างโฟลเดอร์ที่คุณวางไว้
-from app.services.ai_engine import process_medical_images
+# Import Router ที่เราสร้างไว้ในไฟล์ endpoints.py
+from app.api.endpoints import router as ai_router
 
+# 1. สร้าง Instance ของ App
 app = FastAPI(
     title="Medical AI Image Service",
     description="Service สำหรับวิเคราะห์ Change Map จากภาพ CXR ผ่าน Base64",
     version="1.2.0"
 )
 
-# 1. กำหนด Schema สำหรับรับข้อมูล (JSON Body)
-class AnalyzeRequest(BaseModel):
-    image1_base64: str  # ภาพอดีต
-    image2_base64: str  # ภาพปัจจุบัน
-    roi_data: Dict[str, Any] # ข้อมูล ROI เช่น {"roi1": [x,y,w,h], ...}
+# 2. ตั้งค่า CORS (เพื่อให้ Frontend/Laravel เรียกใช้งานได้)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # ใน Production ควรระบุ Domain ของ Laravel เช่น ["http://localhost:8000"]
+    allow_credentials=True,
+    allow_methods=["*"], # อนุญาตทุก Method (GET, POST, etc.)
+    allow_headers=["*"], # อนุญาตทุก Header
+)
 
+# 3. ลงทะเบียน Router (Include Router)
+# กำหนด prefix เป็น /api/v1 ดังนั้น Endpoint จริงจะเป็น: POST /api/v1/analyze
+app.include_router(ai_router, prefix="/api/v1", tags=["AI Pipeline"])
+
+# 4. System Health Check
 @app.get("/health", tags=["System"])
 async def health_check():
     return {"status": "ready", "service": "ai-engine"}
 
-@app.post("/api/v1/analyze", tags=["AI Pipeline"])
-async def analyze_cxr(request: AnalyzeRequest):
-    """
-    Pipeline สำหรับ Base64:
-    1. รับ JSON Payload (Base64 + ROI)
-    2. ส่งต่อไปยัง ai_engine เพื่อ Decode และประมวลผล
-    3. รับผลลัพธ์กลับมาเป็น JSON (ซึ่งจะมีภาพผลลัพธ์เป็น Base64)
-    """
-    try:
-        # 2. ตรวจสอบเบื้องต้นว่ามีการส่ง String มาจริงหรือไม่
-        if not request.image1_base64 or not request.image2_base64:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="กรุณาส่งข้อมูลภาพในรูปแบบ Base64 ทั้ง 2 ภาพ"
-            )
+@app.get("/")
+async def root():
+    return {"message": "Medical AI Service is running."}
 
-        # 3. ส่งข้อมูลไปยัง Service Layer (ai_engine.py)
-        # เนื่องจากเป็น Base64 string อยู่แล้ว จึงไม่ต้องใช้ 'await .read()' เหมือนไฟล์
-        result = process_medical_images(
-            request.image1_base64, 
-            request.image2_base64, 
-            request.roi_data
-        )
-
-        # 4. ตรวจสอบ Business Logic Error (เช่น One-class ไม่ผ่าน)
-        if "error" in result:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, 
-                detail=result["error"]
-            )
-
-        return result
-
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        # ในระดับ Production ควรใช้ Logging เก็บรายละเอียด Error จริง
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"เกิดข้อผิดพลาดภายในระบบ: {str(e)}"
-        )
-
+# 5. Config สำหรับการรัน (Entry Point)
 if __name__ == "__main__":
-    import uvicorn
+    # app.main:app หมายถึง ไฟล์ app/main.py และตัวแปรชื่อ app
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

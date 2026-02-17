@@ -1,3 +1,4 @@
+#modelStructure.py
 import torch
 import torchvision
 
