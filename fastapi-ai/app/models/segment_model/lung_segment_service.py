@@ -9,7 +9,7 @@ import torchvision.transforms.functional as TF
 import numpy as np
 from PIL import Image
 import os
-from modelStructure import PretrainedUNet
+from architecture import PretrainedUNet
 import base64
 class LungSegmentationService:
     def __init__(self, model_path, device=None):
@@ -99,17 +99,17 @@ class LungSegmentationService:
             else:
                 return None
 
-    def prepare_base64_for_predict(b64_string, target_size=(256, 256)):
+    def prepare_byte_for_predict(img_byte, target_size=(256, 256)):
         """
         แปลง Base64 เป็น Tensor ที่พร้อมส่งเข้า model.predict()
         """
         # 1. ตัด header ถ้ามี (เช่น data:image/png;base64,...)
-        if "," in b64_string:
-            b64_string = b64_string.split(",")[1]
+        # if "," in b64_string:
+        #     b64_string = b64_string.split(",")[1]
         
         # 2. Decode และแปลงเป็น Numpy Array
-        img_data = base64.b64decode(b64_string)
-        nparr = np.frombuffer(img_data, np.uint8)
+        # img_data = base64.b64decode(b64_string)
+        nparr = np.frombuffer(img_byte, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE) # อ่านเป็น Grayscale
         
         if image is None:
@@ -126,20 +126,20 @@ class LungSegmentationService:
         
         return input_tensor, original_size
 
-    def image_to_base64(image_np):
-        """
-        แปลงรูปภาพ (Numpy Array) เป็น Base64 String
-        image_np: สามารถเป็นได้ทั้งภาพ Grayscale, BGR (ภาพสี) หรือภาพที่ Overlay แล้ว
-        """
-        # 1. เลือกนามสกุลไฟล์ที่ต้องการ (แนะนำ .jpg สำหรับภาพถ่าย หรือ .png สำหรับภาพที่ต้องการความคมชัด)
-        # ในกรณี Overlay หรือ Cropped แนะนำ .jpg เพื่อให้ขนาดไฟล์ไม่ใหญ่เกินไป
-        success, buffer = cv2.imencode('.jpg', image_np)
+    # def image_to_base64(image_np):
+    #     """
+    #     แปลงรูปภาพ (Numpy Array) เป็น Base64 String
+    #     image_np: สามารถเป็นได้ทั้งภาพ Grayscale, BGR (ภาพสี) หรือภาพที่ Overlay แล้ว
+    #     """
+    #     # 1. เลือกนามสกุลไฟล์ที่ต้องการ (แนะนำ .jpg สำหรับภาพถ่าย หรือ .png สำหรับภาพที่ต้องการความคมชัด)
+    #     # ในกรณี Overlay หรือ Cropped แนะนำ .jpg เพื่อให้ขนาดไฟล์ไม่ใหญ่เกินไป
+    #     success, buffer = cv2.imencode('.jpg', image_np)
         
-        if not success:
-            return None
+    #     if not success:
+    #         return None
         
-        # 2. แปลงเป็น Base64
-        b64_string = base64.b64encode(buffer).decode('utf-8')
+    #     # 2. แปลงเป็น Base64
+    #     b64_string = base64.b64encode(buffer).decode('utf-8')
         
-        # 3. (Optional) เติม Prefix เพื่อให้ Frontend นำไปแสดงผลได้ทันที
-        return b64_string
+    #     # 3. (Optional) เติม Prefix เพื่อให้ Frontend นำไปแสดงผลได้ทันที
+    #     return b64_string
