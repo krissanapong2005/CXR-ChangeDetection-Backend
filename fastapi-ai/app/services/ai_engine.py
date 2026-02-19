@@ -30,10 +30,10 @@ def pred_segment_crop(img64):
     img = segment_service.prepare_base64_for_predict(img64)
     #convert np to base64
     pred_overlay, crop_img = segment_service.predict(img)
-    pred_overlay = segment_service.image_to_base64(pred_overlay)
-    crop_img = segment_service.image_to_base64(crop_img)
+    pred_overlay_base64 = segment_service.image_to_base64(pred_overlay)
+    crop_img_base64 = segment_service.image_to_base64(crop_img)
     
-    return pred_overlay, crop_img
+    return pred_overlay_base64, crop_img_base64
 
     # 3. ส่งผลลัพธ์กลับเป็น Base64 เพื่อให้ Laravel/Frontend แสดงผล <--- พาร์ทนี้ยังไม่นิ่ง
     # return {
