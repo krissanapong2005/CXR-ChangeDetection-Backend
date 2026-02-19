@@ -31,8 +31,10 @@ class normalizeService():
         """ฟังก์ชันหลักสำหรับรับ-ส่ง Base64"""
         
         # 1. แปลง Input Base64 -> Numpy Array
-        image_target = self._base64_to_cv2(target_b64)
-        image_source = self._base64_to_cv2(source_b64)
+        # image_target = self._base64_to_cv2(target_b64)
+        # image_source = self._base64_to_cv2(source_b64)
+        image_target = target_b64
+        image_source = source_b64
 
         if image_target is None or image_source is None:
             return None
@@ -56,4 +58,5 @@ class normalizeService():
         result_img = np.clip(final_image, 0, 255).astype(np.uint8)
 
         # 3. แปลงผลลัพธ์กลับเป็น Base64
-        return self._cv2_to_base64(result_img)
+        # return self._cv2_to_base64(result_img)
+        return result_img

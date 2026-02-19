@@ -9,6 +9,7 @@ model_path = r''
 detector = AnomalyDetector(threshold=0.001949) # ใช้ค่าที่คุณคำนวณจาก Colab
 segment_service = lung_segment_service(model_path)
 registration = Img_registration()
+norm_service = normalize_contrast_service()
 
 def process_medical_images(img1_base64: str, img2_base64: str, roi_data: dict):
     # 1. แปลง Base64 เป็น Bytes
@@ -24,6 +25,9 @@ def process_medical_images(img1_base64: str, img2_base64: str, roi_data: dict):
     
     if not is_valid1 or not is_valid2:
         return {"error": "คุณภาพของภาพไม่ผ่านการตรวจสอบ (Anomaly Detected)"}
+
+    # --- ขั้นตอนที่ทำ: Normalize ---
+    norm_img = norm_service.process_and_normalize(img1_bytes, img2_bytes, roi_data["target"], roi_data["source"])
 
     # --- ขั้นตอนที่ทำ: Segment & Crop ---
     #convert base64 to np
