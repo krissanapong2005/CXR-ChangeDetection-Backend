@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Tuple
 
 # นำเข้าฟังก์ชันจากโครงสร้างโฟลเดอร์ที่คุณวางไว้
 from app.services.ai_engine import process_medical_images
@@ -11,11 +11,21 @@ app = FastAPI(
     version="1.2.0"
 )
 
-# 1. กำหนด Schema สำหรับรับข้อมูล (JSON Body)
+# 1. กำหนดโครงสร้างพิกัด (float, float)
+class ROIEntry(BaseModel):
+    xy_start: Tuple[float, float]
+    xy_end: Tuple[float, float]
+
+# 2. กำหนดโครงสร้าง ROI ที่มี target และ source
+class ROIData(BaseModel):
+    target: ROIEntry
+    source: ROIEntry
+
+# 3. ปรับ AnalyzeRequest ให้ใช้ ROIData
 class AnalyzeRequest(BaseModel):
-    image1_base64: str  # ภาพอดีต
-    image2_base64: str  # ภาพปัจจุบัน
-    roi_data: Dict[str, Any] # ข้อมูล ROI เช่น {"roi1": [x,y,w,h], ...}
+    image1_base64: str
+    image2_base64: str 
+    roi: ROIData
 
 @app.get("/health", tags=["System"])
 async def health_check():
@@ -27,7 +37,7 @@ async def analyze_cxr(request: AnalyzeRequest):
     Pipeline สำหรับ Base64:
     1. รับ JSON Payload (Base64 + ROI)
     2. ส่งต่อไปยัง ai_engine เพื่อ Decode และประมวลผล
-    3. รับผลลัพธ์กลับมาเป็น JSON (ซึ่งจะมีภาพผลลัพธ์เป็น Base64)
+    3. รับผลลัพธ์กลับมาเป็น JSON (มีภาพผลลัพธ์เป็น Base64)
     """
     try:
         # 2. ตรวจสอบเบื้องต้นว่ามีการส่ง String มาจริงหรือไม่
@@ -42,7 +52,7 @@ async def analyze_cxr(request: AnalyzeRequest):
         result = process_medical_images(
             request.image1_base64, 
             request.image2_base64, 
-            request.roi_data
+            request.roi.model_dump()
         )
 
         # 4. ตรวจสอบ Business Logic Error (เช่น One-class ไม่ผ่าน)

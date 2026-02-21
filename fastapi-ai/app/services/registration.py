@@ -22,8 +22,8 @@ class Img_registration:
         return resized
 
     def align_images_ecc_with_resize(image_target, image_moving, processing_width=800, number_of_iterations=100):
-        img_fixed_bgr = image_target
-        img_moving_bgr = image_moving
+        img_fixed_gray = image_target
+        img_moving_gray = image_moving
 
         # --- 3. [ขั้นตอนใหม่] ปรับขนาดภาพ (Resizing) ---
         # 3.1 ย่อภาพ Fixed ให้มีความกว้างตามที่กำหนด (เพื่อความเร็วในการคำนวณ)
@@ -32,14 +32,14 @@ class Img_registration:
         
         # 3.2 ปรับภาพ Moving ให้มีขนาด (w, h) เท่ากับภาพ Fixed ที่ย่อแล้วเป๊ะๆ
         # ข้อควรระวัง: findTransformECC ต้องการให้ภาพทั้งสองมีขนาดเท่ากัน (Dimension Matching)
-        target_h, target_w = img_fixed_bgr.shape[:2]
-        img_moving_resized = cv2.resize(img_moving_bgr, (target_w, target_h), interpolation=cv2.INTER_AREA)
+        target_h, target_w = img_fixed_gray.shape[:2]
+        img_moving_resized = cv2.resize(img_moving_gray, (target_w, target_h), interpolation=cv2.INTER_AREA)
 
         # print(f"ปรับขนาดภาพเพื่อประมวลผลเป็น: {target_w}x{target_h}")
 
         # --- 4. เตรียมภาพสำหรับ ECC (Grayscale) ---
-        img_fixed_gray = cv2.cvtColor(img_fixed_bgr, cv2.COLOR_BGR2GRAY)
-        img_moving_gray = cv2.cvtColor(img_moving_resized, cv2.COLOR_BGR2GRAY)
+        # img_fixed_gray = cv2.cvtColor(img_fixed_rgb, cv2.COLOR_RGB2GRAY)
+        # img_moving_gray = cv2.cvtColor(img_moving_resized, cv2.COLOR_RGB2GRAY)
 
         # --- 5. ตั้งค่า ECC ---
         warp_mode = cv2.MOTION_AFFINE
@@ -48,11 +48,11 @@ class Img_registration:
         termination_eps = 1e-10
         criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations, termination_eps)
 
-        print("กำลังคำนวณ ECC... (Speed up by resizing)")
+        # print("กำลังคำนวณ ECC... (Speed up by resizing)")
         
         try:
             # --- 6. คำนวณหา Transformation Matrix ---
-            (cc, warp_matrix) = cv2.findTransformECC(img_fixed_gray, img_moving_gray, warp_matrix, warp_mode, criteria)
+            (cc, warp_matrix) = cv2.findTransformECC(img_fixed_gray, img_moving_resized, warp_matrix, warp_mode, criteria)
             print(f"ECC สำเร็จ (Correlation: {cc:.4f})")
         except cv2.error as e:
             print("Error: ECC ล้มเหลว (ภาพอาจแตกต่างกันเกินไป)")
@@ -61,6 +61,6 @@ class Img_registration:
         # --- 7. ใช้ Warp Affine ---
         sz = img_fixed_gray.shape
         # ใช้ WARP_INVERSE_MAP เพราะ ECC map Fixed -> Moving
-        img_aligned = cv2.warpAffine(img_moving_gray, warp_matrix, (sz[1], sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
+        img_aligned = cv2.warpAffine(img_moving_resized, warp_matrix, (sz[1], sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
 
         return img_aligned

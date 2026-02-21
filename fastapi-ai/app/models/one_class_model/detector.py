@@ -22,10 +22,10 @@ class AnomalyDetector:
         self.model.load_state_dict(torch.load(weights_path, map_location=self.device))
         self.model.eval()
 
-    def preprocess(self, img_bytes):
+    def preprocess(self, img):
         # แปลง bytes เป็น numpy array และ resize ให้ตรงกับตอนเทรน (256x256)
-        nparr = np.frombuffer(img_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
+        # nparr = np.frombuffer(img_bytes, np.uint8)
+        # img = cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
         img = cv2.resize(img, (256, 256))
         
         # Normalize

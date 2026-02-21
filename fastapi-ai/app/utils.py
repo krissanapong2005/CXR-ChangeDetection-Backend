@@ -17,7 +17,7 @@ def decode_base64_to_bytes(base64_string: str) -> bytes:
     except Exception as e:
         raise ValueError(f"ไม่สามารถถอดรหัส Base64 ได้: {str(e)}")
 
-def encode_bytes_to_base64(img_bytes: bytes, format: str = "png") -> str:
+def encode_bytes_to_base64(img_bytes: bytes, format: str = "jpg") -> str:
     """
     แปลง bytes กลับเป็น Base64 string เพื่อส่งกลับไปแสดงผลบนหน้าเว็บ
     """
@@ -30,3 +30,10 @@ def numpy_to_base64(img_np: np.ndarray) -> str:
     """
     _, buffer = cv2.imencode('.png', img_np)
     return encode_bytes_to_base64(buffer.tobytes())
+
+def byte_to_np_grayscale(img_bytes: bytes):
+    """
+    แปลง byte เป็น numpy grayscale
+    """
+    nparr = np.frombuffer(img_bytes, np.uint8)
+    return cv2.imdecode(nparr, cv2.IMREAD_GRAYSCALE)
