@@ -78,6 +78,7 @@ class LungSegmentationService:
                 
                 return cropped_img
             else:
+                print('Cannot return crop img')
                 return None
 
     def prepare_for_predict(self, img, target_size=(256, 256)):
