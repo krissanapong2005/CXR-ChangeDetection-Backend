@@ -22,6 +22,12 @@ class Img_registration:
         return resized
 
     def align_images_ecc_with_resize(image_target, image_moving, processing_width=800, number_of_iterations=100):
+        if image_target is None:
+            print("Error: image_target is None")
+            return None
+        if image_moving is None:
+            print("Error: image_moving is None")
+            return None
         img_fixed_gray = image_target
         img_moving_gray = image_moving
 
