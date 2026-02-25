@@ -1,23 +1,33 @@
 # main.py
-from app.database.connect_database import test_connection
+from dotenv import load_dotenv
+from pathlib import Path
+import os
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import Tuple
-from dotenv import load_dotenv
+from app.database.connect_database import test_connection
 from app.services.ai_engine import process_medical_images
 from fastapi import FastAPI, Request, HTTPException, Header, Depends
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-import os
 import pyotp
+
 
 app = FastAPI(
     title="Medical AI Image Service",
     description="Service สำหรับวิเคราะห์ Change Map จากภาพ CXR ผ่าน Base64",
     version="1.2.0"
 )
+
+
 load_dotenv()
-SHARED_SECRET = os.getenv("API_SHARED_SECRET")
+SHARED_SECRET = os.getenv("SHARED_SECRET")
+
+# print(f"[*] Checking .env at: {ENV_PATH}")
+# if os.getenv("SHARED_SECRET"):
+#     print("✅ SUCCESS: API_SHARED_SECRET is loaded!")
+# else:
+#     print("❌ STILL MISSING: API_SHARED_SECRET is not found.")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -54,10 +64,18 @@ class AnalyzeRequest(BaseModel):
     roi: ROIData
 
 def verify_rolling_key(x_api_key: str = Header(...)):
-    totp = pyotp.TOTP(SHARED_SECRET)
-    # verify() checks the current key and allows a small grace period (drift)
-    if not totp.verify(x_api_key):
-        raise HTTPException(status_code=401, detail="Key expired or invalid")
+    # ถ้า SHARED_SECRET เป็น None ให้โยน Error 500 แจ้ง Admin ทันที
+    if not SHARED_SECRET:
+        print("Error: API_SHARED_SECRET is not set in environment variables.")
+        raise HTTPException(status_code=500, detail="Server Auth Configuration Error")
+    
+    try:
+        totp = pyotp.TOTP(SHARED_SECRET)
+        if not totp.verify(x_api_key):
+            raise HTTPException(status_code=401, detail="Key expired or invalid")
+    except Exception as e:
+        print(f"pyotp error: {e}")
+        raise HTTPException(status_code=401, detail="Invalid Key Format")
     return True
 
 @app.on_event("startup")
