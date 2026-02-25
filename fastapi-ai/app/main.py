@@ -2,8 +2,7 @@
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import Tuple
-
-# นำเข้าฟังก์ชันจากโครงสร้างโฟลเดอร์ที่คุณวางไว้
+from app.database.connect_database import test_connection
 from app.services.ai_engine import process_medical_images
 
 app = FastAPI(
@@ -27,6 +26,15 @@ class AnalyzeRequest(BaseModel):
     image1_base64: str
     image2_base64: str 
     roi: ROIData
+
+@app.on_event("startup")
+async def startup_event():
+    print("Starting CXR Analysis System...")
+    test_connection()
+
+@app.get("/")
+def read_root():
+    return {"message": "CXR Backend is running!"}
 
 @app.get("/health", tags=["System"])
 async def health_check():
