@@ -4,12 +4,33 @@ from pydantic import BaseModel
 from typing import Tuple
 from app.database.connect_database import test_connection
 from app.services.ai_engine import process_medical_images
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 app = FastAPI(
     title="Medical AI Image Service",
     description="Service สำหรับวิเคราะห์ Change Map จากภาพ CXR ผ่าน Base64",
     version="1.2.0"
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    error_details = exc.errors()
+    missing_fields = [err["loc"][-1] for err in error_details if err["type"] == "missing"]
+    
+    if missing_fields:
+        error_msg = f"ข้อมูลที่ส่งมาไม่ครบถ้วน{', '.join(missing_fields)}"
+    else:
+        error_msg = "รูปแบบข้อมูลที่ส่งมาไม่ถูกต้อง (Validation Error)"
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "fail",
+            "message": error_msg
+        }
+    )
 
 # 1. กำหนดโครงสร้างพิกัด (float, float)
 class ROIEntry(BaseModel):
