@@ -1,3 +1,4 @@
+# registration.py
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +8,7 @@ class Img_registration:
     def __init__(self, img1=None, img2=None):
         self.image_target = img1
         self.image_moving = img2
-
+    @staticmethod
     def resize_keep_aspect_ratio(image, target_width=None):
         """ย่อภาพโดยรักษาอัตราส่วน (Aspect Ratio) ตามความกว้างที่กำหนด"""
         if target_width is None:
@@ -20,7 +21,7 @@ class Img_registration:
         # ใช้ INTER_AREA ซึ่งเหมาะสำหรับการย่อภาพ (Downsampling)
         resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
         return resized
-
+    @staticmethod
     def align_images_ecc_with_resize(image_target, image_moving, processing_width=800, number_of_iterations=100):
         img_fixed_gray = image_target
         img_moving_gray = image_moving

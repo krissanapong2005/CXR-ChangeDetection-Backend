@@ -1,3 +1,4 @@
+# architecture.py
 import torch
 import torchvision
 
