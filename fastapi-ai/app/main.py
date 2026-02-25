@@ -1,18 +1,23 @@
 # main.py
+from app.database.connect_database import test_connection
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import Tuple
-from app.database.connect_database import test_connection
+from dotenv import load_dotenv
 from app.services.ai_engine import process_medical_images
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, Header, Depends
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+import os
+import pyotp
 
 app = FastAPI(
     title="Medical AI Image Service",
     description="Service สำหรับวิเคราะห์ Change Map จากภาพ CXR ผ่าน Base64",
     version="1.2.0"
 )
+load_dotenv()
+SHARED_SECRET = os.getenv("API_SHARED_SECRET")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -48,6 +53,13 @@ class AnalyzeRequest(BaseModel):
     image2_base64: str 
     roi: ROIData
 
+def verify_rolling_key(x_api_key: str = Header(...)):
+    totp = pyotp.TOTP(SHARED_SECRET)
+    # verify() checks the current key and allows a small grace period (drift)
+    if not totp.verify(x_api_key):
+        raise HTTPException(status_code=401, detail="Key expired or invalid")
+    return True
+
 @app.on_event("startup")
 async def startup_event():
     print("Starting CXR Analysis System...")
@@ -61,7 +73,7 @@ def read_root():
 async def health_check():
     return {"status": "ready", "service": "ai-engine"}
 
-@app.post("/api/v1/analyze", tags=["AI Pipeline"])
+@app.post("/api/v1/analyze", tags=["AI Pipeline"], dependencies=[Depends(verify_rolling_key)])
 async def analyze_cxr(request: AnalyzeRequest):
     """
     Pipeline สำหรับ Base64:
