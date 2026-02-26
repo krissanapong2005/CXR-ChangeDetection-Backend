@@ -4,8 +4,9 @@ from app.models.segment_model import lung_segment_service
 from app.services.registration import Img_registration
 from app.services.change_detection import block_based_pca_change_detection
 from app.models.segment_model.normalize_contrast_service import normalizeService
+import os
 
-model_path = r'D:\GitHub\CXR-ChangeDetection-Backend\fastapi-ai\app\models\segment_model\lung_segmentation_model50epoch.pth'
+model_path = os.path.join('app', 'models', 'segment_model', 'lung_segmentation_model50epoch.pth')
 
 # โหลด Detector เตรียมไว้ (Singleton Pattern)
 try:
