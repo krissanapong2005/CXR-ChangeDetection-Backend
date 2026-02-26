@@ -11,6 +11,7 @@ from fastapi import FastAPI, Request, HTTPException, Header, Depends
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 import pyotp
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI(
@@ -19,15 +20,26 @@ app = FastAPI(
     version="1.2.0"
 )
 
+origins = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"],
+)
 
 load_dotenv()
 SHARED_SECRET = os.getenv("SHARED_SECRET")
 
-# print(f"[*] Checking .env at: {ENV_PATH}")
-# if os.getenv("SHARED_SECRET"):
-#     print("✅ SUCCESS: API_SHARED_SECRET is loaded!")
-# else:
-#     print("❌ STILL MISSING: API_SHARED_SECRET is not found.")
+if os.getenv("SHARED_SECRET"):
+    print("SUCCESS: API_SHARED_SECRET is loaded!")
+else:
+    print("STILL MISSING: API_SHARED_SECRET is not found.")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -64,7 +76,6 @@ class AnalyzeRequest(BaseModel):
     roi: ROIData
 
 def verify_rolling_key(x_api_key: str = Header(...)):
-    # ถ้า SHARED_SECRET เป็น None ให้โยน Error 500 แจ้ง Admin ทันที
     if not SHARED_SECRET:
         print("Error: API_SHARED_SECRET is not set in environment variables.")
         raise HTTPException(status_code=500, detail="Server Auth Configuration Error")
