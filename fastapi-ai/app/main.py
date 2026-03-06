@@ -5,8 +5,8 @@ import os
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from typing import Tuple
-from app.database.connect_database import test_connection
-from app.services.ai_engine import process_medical_images
+# from database.connect_database import test_connection
+from services.ai_engine import process_medical_images
 from fastapi import FastAPI, Request, HTTPException, Header, Depends
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -23,6 +23,7 @@ app = FastAPI(
 origins = [
     "http://127.0.0.1:8000",
     "http://localhost:8000",
+    "http://10.0.0.2",
 ]
 
 app.add_middleware(
@@ -89,10 +90,10 @@ def verify_rolling_key(x_api_key: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid Key Format")
     return True
 
-@app.on_event("startup")
-async def startup_event():
-    print("Starting CXR Analysis System...")
-    test_connection()
+# @app.on_event("startup")
+# async def startup_event():
+#     print("Starting CXR Analysis System...")
+    # test_connection()
 
 @app.get("/")
 def read_root():
@@ -146,4 +147,4 @@ async def analyze_cxr(request: AnalyzeRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8701, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8701, reload=False)

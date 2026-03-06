@@ -1,12 +1,12 @@
-from app.utils import decode_base64_to_bytes, numpy_to_base64, byte_to_np_grayscale
-from app.models.one_class_model import AnomalyDetector
-from app.models.segment_model import lung_segment_service
-from app.services.registration import Img_registration
-from app.services.change_detection import block_based_pca_change_detection
-from app.models.segment_model.normalize_contrast_service import normalizeService
+from utils import decode_base64_to_bytes, numpy_to_base64, byte_to_np_grayscale
+from models.one_class_model import AnomalyDetector
+from models.segment_model import lung_segment_service
+from services.registration import Img_registration
+from services.change_detection import block_based_pca_change_detection
+from models.segment_model.normalize_contrast_service import normalizeService
 import os
 
-model_path = os.path.join('app', 'models', 'segment_model', 'lung_segmentation_model50epoch.pth')
+model_path = os.path.join('models', 'segment_model', 'lung_segmentation_model50epoch.pth')
 
 # โหลด Detector เตรียมไว้ (Singleton Pattern)
 try:

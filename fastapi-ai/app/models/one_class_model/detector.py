@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import os
 from .architecture import Autoencoder
-from app.utils import decode_base64_to_bytes
+from utils import decode_base64_to_bytes
 
 class AnomalyDetector:
     def __init__(self, model_filename="weights_v1.pth", threshold=None):
