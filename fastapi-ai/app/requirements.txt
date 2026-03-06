@@ -21,3 +21,4 @@ pyotp
 
 mysql-connector-python
 scikit-learn
+matplotlib
